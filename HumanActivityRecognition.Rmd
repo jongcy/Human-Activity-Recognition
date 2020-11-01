@@ -1,0 +1,79 @@
+---
+title: "HumanActivityRecognition"
+author: "Cy"
+date: "10/31/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Background
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://web.archive.org/web/20161224072740/http:/groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+
+
+# Summary
+This data is supplied with train data with outcome and test data without outcome. Firstly, the csv files are imported using read.csv with "" and "NA" as na.strings. Then, the columns with empty data are removed with complete.cases function. Less meaningful columns including names and index are removed as it should have no influence to the outcome of the results. the columns names were then matched from train to test data to ensure similar columns are returned after the removal of useless columns.
+
+The data processing is continued with separation of training data into another set of training (70%) and validation data (30%). This new training data underwent random forest treatment and the model is validated using the validation data created. After examination of the accuracy obtained. The model is transferred to test data and compute for their possible classes    
+
+# Working  
+
+### Packages
+```{r lib,cache=TRUE,results="hide", message=FALSE, warning=FALSE}
+library(caret)
+library(randomForest)
+```
+
+### Loading Data  
+```{r,cache=TRUE}
+
+tr<-read.csv("training.csv",na.strings = c("","NA"))
+             
+te<-read.csv("testing.csv",na.strings = c("","NA"))
+             
+trf<-complete.cases(t(tr))
+tef<-complete.cases(t(te))
+fulltr<-tr[,trf]
+fullte<-te[,tef]
+```
+
+
+### Remove unused columns  
+```{r,cache=TRUE}
+fulltr<-fulltr[,-c(1:7)]
+fullte<-fullte[,-c(1:7)]
+names(fullte)==names(fulltr) #determine if columns match from train and test after ammendment
+```
+
+
+### Create validation and train the data
+```{r training,cache=TRUE}
+
+set.seed(222)
+intrain<-createDataPartition(y=fulltr$classe,p=0.6,list=FALSE)
+tra<-fulltr[intrain,]
+val<-fulltr[-intrain,]
+tra$classe<-as.factor(tra$classe)
+model<-train(classe~.,data = tra,method="rf", ntree=2)
+#model<-randomForest::randomForest(classe~.,data = tra)
+      
+```
+
+
+### Predict 
+```{r predict,cache=TRUE}
+pred<-predict(model,val)
+acc<-sum(pred==val$classe)/nrow(val) #determine accuracy rate in validation rate
+print(acc)
+```
+
+
+### Validate with 20 test sets
+```{r validate,cache=TRUE}
+predtest<-predict(model,fullte)
+print(predtest)
+```
+The result above indicates the group which all 20 test data belong to
